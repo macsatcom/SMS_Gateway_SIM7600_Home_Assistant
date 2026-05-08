@@ -2,6 +2,7 @@
 
 Provides:
 - sms_gateway.send_sms service for sending SMS messages
+- notify.sms_gateway entity for integration with the notify service
 - sms_gateway_incoming_message events for received SMS (via SSE stream)
 - Sensor entities for signal strength and network status
 """
@@ -36,7 +37,7 @@ from .coordinator import (
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.NOTIFY]
 
 SEND_SMS_SCHEMA = vol.Schema(
     {
