@@ -1,0 +1,54 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to SMS Gateway",
+        "description": "Enter the connection details for your SIM7600 SMS Gateway.",
+        "data": {
+          "host": "Host URL (e.g. http://192.168.1.100)",
+          "api_port": "API Port",
+          "api_key": "API Key"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to the gateway. Check the host URL and port.",
+      "invalid_host": "Host must start with http:// or https://",
+      "invalid_api_key": "Invalid API key. Check your .env configuration.",
+      "empty_api_key": "API key is required.",
+      "modem_not_ready": "Gateway is reachable but the modem is not responding. Check the SIM7600E connection."
+    },
+    "abort": {
+      "already_configured": "This SMS Gateway is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "SMS Gateway Options",
+        "description": "Incoming SMS arrive in real-time via SSE stream. Poll interval only affects health and status updates.",
+        "data": {
+          "name": "Display name",
+          "poll_interval": "Poll interval (seconds, 5\u2013300)",
+          "auto_delete": "Auto-delete messages after processing"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "signal_dbm": {
+        "name": "Signal strength"
+      },
+      "signal_rssi": {
+        "name": "Signal RSSI"
+      },
+      "network": {
+        "name": "Network"
+      },
+      "smsc": {
+        "name": "SMSC"
+      }
+    }
+  }
+}
