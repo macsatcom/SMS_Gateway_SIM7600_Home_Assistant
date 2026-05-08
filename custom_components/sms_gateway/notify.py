@@ -52,19 +52,12 @@ class SmsGatewayNotifyEntity(NotifyEntity):
         gateway_name = entry.options.get(CONF_NAME, entry.title)
         self._attr_name = gateway_name
         self._attr_unique_id = f"{entry.entry_id}_notify"
-        self._attr_device_info = None  # Not tied to a device
+        self._attr_device_info = None
 
     async def async_send_message(self, message: str, **kwargs: object) -> None:
-        """Send an SMS message.
-
-        Args:
-            message: The message body to send.
-            **kwargs: Must include 'target' (recipient phone number).
-                     Accepts a single string or a list of strings.
-        """
+        """Send an SMS message."""
         target = kwargs.get("target")
 
-        # Handle Home Assistant's notify target format
         if target is None:
             raise HomeAssistantError(
                 "No recipient specified. "
@@ -85,7 +78,6 @@ class SmsGatewayNotifyEntity(NotifyEntity):
         else:
             target = str(target)
 
-        # Validate international phone number format
         if not target.startswith("+") or len(target) < 8:
             raise HomeAssistantError(
                 f"Invalid recipient '{target}'. "

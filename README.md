@@ -44,7 +44,9 @@ Copy the `custom_components/sms_gateway/` directory to your HA config's `custom_
 ### Sending SMS
 
 ```yaml
-service: notify.sms_gateway
+service: notify.send_message
+target:
+  entity_id: notify.sms_gateway
 data:
   message: "Motion detected in the garage"
   target: "+4512345678"
@@ -61,7 +63,9 @@ automation:
       - platform: event
         event_type: sms_gateway_incoming_message
     action:
-      - service: notify.sms_gateway
+      - service: notify.send_message
+        target:
+          entity_id: notify.sms_gateway
         data:
           message: "I got your message!"
           target: "{{ trigger.event.data.sender }}"
