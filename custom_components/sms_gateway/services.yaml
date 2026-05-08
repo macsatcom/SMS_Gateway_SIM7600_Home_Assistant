@@ -1,0 +1,18 @@
+send_sms:
+  name: Send SMS
+  description: Send an SMS message via the SIM7600 cellular gateway
+  fields:
+    target:
+      required: true
+      description: Recipient phone number in international format (e.g., +4512345678)
+      example: "+4512345678"
+      selector:
+        text:
+          multiline: false
+    message:
+      required: true
+      description: The SMS message text
+      example: "Hello from Home Assistant"
+      selector:
+        text:
+          multiline: true
