@@ -1,7 +1,7 @@
 """SMS Gateway integration for Home Assistant.
 
 Provides:
-- notify.sms_gateway for sending SMS messages
+- sms_gateway.send_sms service for sending SMS messages
 - sms_gateway_incoming_message events for received SMS (via SSE stream)
 - Sensor entities for signal strength and network status
 """
@@ -9,10 +9,13 @@ from __future__ import annotations
 
 import logging
 
+import voluptuous as vol
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
@@ -26,13 +29,21 @@ from .const import (
 from .coordinator import (
     SmsGatewayAuthError,
     SmsGatewayClient,
+    SmsGatewayClientError,
     SmsGatewayConnectionError,
     SmsGatewayCoordinator,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.NOTIFY, Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.SENSOR]
+
+SEND_SMS_SCHEMA = vol.Schema(
+    {
+        vol.Required("message"): cv.string,
+        vol.Required("target"): cv.string,
+    }
+)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -82,6 +93,36 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Forward setup to platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
+    # Register send_sms service (first entry only — one service for all gateways)
+    if not hass.services.has_service(DOMAIN, "send_sms"):
+        async def _send_sms(call: ServiceCall) -> None:
+            target = call.data["target"]
+            message = call.data["message"]
+
+            if not target.startswith("+") or len(target) < 8:
+                raise HomeAssistantError(
+                    f"Invalid recipient '{target}'. "
+                    "Must be international format starting with '+' (e.g., +4512345678)."
+                )
+
+            # Use the first configured gateway
+            entry_data = next(iter(hass.data[DOMAIN].values()))
+            client: SmsGatewayClient = entry_data["client"]
+
+            try:
+                result = await client.send_sms(target, message)
+                if not result.get("ok"):
+                    raise HomeAssistantError(f"Gateway reported failure: {result}")
+                _LOGGER.info("SMS sent to %s (ref: %s)", target, result.get("message_reference", "N/A"))
+            except SmsGatewayConnectionError as ex:
+                raise HomeAssistantError(f"Could not send SMS: gateway unreachable — {ex}") from ex
+            except SmsGatewayClientError as ex:
+                raise HomeAssistantError(f"Gateway error: {ex}") from ex
+
+        hass.services.async_register(
+            DOMAIN, "send_sms", _send_sms, schema=SEND_SMS_SCHEMA
+        )
+
     # Listen for option changes (reloads the entry to apply all changes)
     entry.async_on_unload(
         entry.add_update_listener(_async_options_updated)
@@ -99,6 +140,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
+    # Remove service when last gateway is removed
+    if not hass.data[DOMAIN]:
+        hass.services.async_remove(DOMAIN, "send_sms")
     return unload_ok
 
 

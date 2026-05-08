@@ -4,7 +4,7 @@ Send and receive SMS messages directly from Home Assistant automations using a S
 
 ## Features
 
-- **`notify.sms_gateway`** — Send SMS from any automation, script, or dashboard
+- **`sms_gateway.send_sms`** — Send SMS from any automation, script, or dashboard
 - **`sms_gateway_incoming_message` event** — Trigger automations when an SMS arrives (real-time via SSE push)
 - **Sensor entities** — Signal strength (dBm & RSSI), network registration, SMSC
 - **UI config flow** — Set up entirely from the Home Assistant interface, no YAML needed
@@ -44,9 +44,7 @@ Copy the `custom_components/sms_gateway/` directory to your HA config's `custom_
 ### Sending SMS
 
 ```yaml
-service: notify.send_message
-target:
-  entity_id: notify.sms_gateway
+service: sms_gateway.send_sms
 data:
   message: "Motion detected in the garage"
   target: "+4512345678"
@@ -63,9 +61,7 @@ automation:
       - platform: event
         event_type: sms_gateway_incoming_message
     action:
-      - service: notify.send_message
-        target:
-          entity_id: notify.sms_gateway
+      - service: sms_gateway.send_sms
         data:
           message: "I got your message!"
           target: "{{ trigger.event.data.sender }}"
