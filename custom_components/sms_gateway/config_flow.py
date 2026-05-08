@@ -59,10 +59,11 @@ class SmsGatewayConfigFlow(ConfigFlow, domain=DOMAIN):
             port = user_input[CONF_API_PORT]
             api_key = user_input[CONF_API_KEY].strip()
 
-            # Basic validation
+            # Auto-prepend http:// if no scheme given
             if not host.startswith(("http://", "https://")):
-                errors[CONF_HOST] = "invalid_host"
-            elif not api_key:
+                host = f"http://{host}"
+
+            if not api_key:
                 errors[CONF_API_KEY] = "empty_api_key"
             else:
                 # Warn if the host is a loopback address
