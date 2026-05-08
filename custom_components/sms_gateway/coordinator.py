@@ -248,24 +248,26 @@ class SmsGatewayCoordinator(DataUpdateCoordinator[dict]):
                     except Exception:
                         pass
                     buf = ""
+                    current_data = ""
 
-                    async for line_bytes in resp.content:
-                        line = line_bytes.decode("utf-8", errors="replace")
+                    async for chunk in resp.content:
+                        buf += chunk.decode("utf-8", errors="replace")
 
-                        if line == "\n" and buf:
-                            # Empty line = end of event
-                            self._process_sse_event(
-                                buf, gateway_id, gateway_name
-                            )
-                            buf = ""
-                        elif line.startswith("data:"):
-                            if buf:
-                                buf += "\n"
-                            buf += line[5:].strip()
-                        elif line.startswith(":") or line == "\n":
-                            continue
-                        else:
-                            buf += line
+                        while "\n" in buf:
+                            line, buf = buf.split("\n", 1)
+                            line = line.strip("\r")
+
+                            if not line:
+                                # Empty line = end of event
+                                if current_data:
+                                    self._process_sse_event(
+                                        current_data, gateway_id, gateway_name
+                                    )
+                                    current_data = ""
+                            elif line.startswith("data:"):
+                                current_data = line[5:].strip()
+                            elif line.startswith(":"):
+                                pass  # comment / keepalive
 
             except asyncio.CancelledError:
                 _LOGGER.debug("SSE stream task cancelled")
