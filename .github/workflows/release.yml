@@ -16,8 +16,8 @@ jobs:
 
       - name: Build HACS zip
         run: |
-          cd custom_components
-          zip -r ../sms_gateway.zip sms_gateway/
+          cd custom_components/sms_gateway
+          zip -r ../../sms_gateway.zip .
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
